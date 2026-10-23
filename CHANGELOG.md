@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Smaller package: the TypeScript build cache is no longer included.
+- Releases are now published through npm trusted publishing.
+
 ## 0.1.0
 
 First release.

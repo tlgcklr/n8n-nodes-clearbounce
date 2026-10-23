@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-clearbounce",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ClearBounce email verification and email finder for n8n: verify single addresses, clean whole lists in bulk jobs, find business emails.",
   "license": "MIT",
   "homepage": "https://clearbounce.net",
@@ -32,7 +32,8 @@
     "prepublishOnly": "n8n-node prerelease"
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/tsconfig.tsbuildinfo"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,

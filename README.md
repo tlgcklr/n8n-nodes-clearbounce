@@ -92,6 +92,10 @@ Import any of these from the [`examples`](examples) folder (in n8n: **Workflows 
 
 ## Version history
 
+### 0.1.1
+
+Smaller package; published through npm trusted publishing.
+
 ### 0.1.0
 
 First release: Email (Verify, Find), Bulk Job (Create, Get, Get Results), Account (Get Credits).
