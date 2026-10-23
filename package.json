@@ -56,5 +56,8 @@
   },
   "bugs": {
     "url": "https://github.com/tlgcklr/n8n-nodes-clearbounce/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
