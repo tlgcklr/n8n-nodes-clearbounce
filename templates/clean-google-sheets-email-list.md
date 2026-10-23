@@ -1,4 +1,4 @@
-## Clean a Google Sheets email list with ClearBounce
+## Clean email lists in Google Sheets with ClearBounce bulk verification
 
 Verify every address in a Google Sheet in one bulk job and write the result next to each row, so you only send to addresses that can receive mail.
 
@@ -14,7 +14,7 @@ Marketers, sales teams and agencies who keep contact lists in Google Sheets and 
 ### Setup
 1. Add `email`, `status`, `reason` and `score` columns to your sheet.
 2. Select the spreadsheet and sheet in **Read Contacts** and **Write Results**.
-3. Create a free ClearBounce account and an API key (Dashboard → API).
+3. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).
 4. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to the three ClearBounce HTTP nodes.
 5. Click **Execute workflow**.
 
