@@ -1,0 +1,348 @@
+{
+  "name": "Find and verify business emails for leads in Google Sheets with ClearBounce",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Find and verify business emails for leads in Google Sheets with ClearBounce\n\nTurn a sheet of names and company domains into verified business email addresses. For each lead without an email, ClearBounce finds the most likely address, verifies it and writes the address and its status back to the row.\n\n### Who is it for\nSales teams, recruiters and agencies building outreach lists who start from a name and a company website.\n\n### How it works\n1. Reads every lead from Google Sheets and keeps the rows without an email.\n2. **Find Email** looks up the most likely address from the name and domain (free).\n3. **Verify Email** checks that address in real time (1 credit).\n4. Writes `email`, `status` and `confidence` back to the lead's row, so you can filter on `deliverable` before sending.\n\n### Setup\n1. Your sheet needs `name`, `domain`, `email`, `status` and `confidence` columns.\n2. Select the spreadsheet and sheet in **Read Leads** and **Update Lead**.\n3. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard \u2192 API).\n4. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to **Find Email** and **Verify Email**.\n5. Click **Execute workflow**.\n\n### Requirements\n- ClearBounce account (finding is free; 1 credit per verification)\n- Google Sheets account\n\n### Customize\nRun it on a schedule to enrich new leads automatically, or try the other candidates in **Find Email**'s `candidates` list when the first one is undeliverable.",
+        "height": 700,
+        "width": 560
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000001",
+      "name": "Template Description",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Read leads without an email",
+        "height": 320,
+        "width": 580,
+        "color": 7
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000002",
+      "name": "Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Find and verify with ClearBounce",
+        "height": 320,
+        "width": 620,
+        "color": 7
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000003",
+      "name": "Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        540,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Save the result",
+        "height": 320,
+        "width": 320,
+        "color": 7
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000004",
+      "name": "Step 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000010",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000011",
+      "name": "Read Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f6c8b7c5-0006-4b6d-8f60-0000000000c1",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "f6c8b7c5-0006-4b6d-8f60-0000000000c2",
+              "leftValue": "={{ $json.domain }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000012",
+      "name": "Leads Without Email",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.clearbounce.net/api/v1/finder/person",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: $json.name, domain: $json.domain }) }}",
+        "options": {}
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000013",
+      "name": "Find Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.clearbounce.net/api/v1/verify",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json.email || ($json.candidates || [])[0] || '' }) }}",
+        "options": {}
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000014",
+      "name": "Verify Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        80
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Read Leads').item.json.row_number }}",
+            "email": "={{ $json.data?.email ?? '' }}",
+            "status": "={{ $json.data?.status ?? 'not_found' }}",
+            "confidence": "={{ $('Find Email').item.json.confidence }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "domain",
+              "displayName": "domain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "confidence",
+              "displayName": "confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f6c8b7c5-0006-4b6d-8f60-000000000015",
+      "name": "Update Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1280,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Read Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Leads": {
+      "main": [
+        [
+          {
+            "node": "Leads Without Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leads Without Email": {
+      "main": [
+        [
+          {
+            "node": "Find Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Email": {
+      "main": [
+        [
+          {
+            "node": "Verify Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Email": {
+      "main": [
+        [
+          {
+            "node": "Update Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
