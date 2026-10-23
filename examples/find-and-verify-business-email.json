@@ -1,0 +1,174 @@
+{
+  "name": "Find and verify a business email with ClearBounce",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Find and verify a business email with ClearBounce\n\nTurns a name and company domain into a verified email address.\n\n1. **Find** (free) looks the person up and returns the best match plus pattern candidates.\n2. **Verify** (1 credit) checks the best match before you send anything.\n\n**Setup**\n1. Create a ClearBounce API credential with a live key (`cb_live_`).\n2. Edit **Lead** with a real name and domain, or replace it with your CRM, a Google Sheet or a form.\n3. Click **Execute workflow**.",
+        "height": 340,
+        "width": 420
+      },
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000001",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -220
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000002",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c3f5e4f2-0003-4e3a-9c30-0000000000a1",
+              "name": "fullName",
+              "value": "Nathan Smith",
+              "type": "string"
+            },
+            {
+              "id": "c3f5e4f2-0003-4e3a-9c30-0000000000a2",
+              "name": "domain",
+              "value": "example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000003",
+      "name": "Lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "find",
+        "fullName": "={{ $json.fullName }}",
+        "domain": "={{ $json.domain }}"
+      },
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000004",
+      "name": "Find Email",
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
+      "position": [
+        740,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3f5e4f2-0003-4e3a-9c30-0000000000c1",
+              "leftValue": "={{ $json.email || ($json.candidates || [])[0] || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000005",
+      "name": "Address Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "email": "={{ $json.email || $json.candidates[0] }}"
+      },
+      "id": "c3f5e4f2-0003-4e3a-9c30-000000000006",
+      "name": "Verify Email",
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -100
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead": {
+      "main": [
+        [
+          {
+            "node": "Find Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Email": {
+      "main": [
+        [
+          {
+            "node": "Address Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Address Found?": {
+      "main": [
+        [
+          {
+            "node": "Verify Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

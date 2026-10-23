@@ -1,0 +1,27 @@
+{
+	"node": "n8n-nodes-clearbounce.clearBounce",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Marketing & Content", "Sales"],
+	"alias": [
+		"email verification",
+		"email validation",
+		"email verifier",
+		"email checker",
+		"bounce",
+		"list cleaning",
+		"email finder"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/tlgcklr/n8n-nodes-clearbounce?tab=readme-ov-file#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/tlgcklr/n8n-nodes-clearbounce?tab=readme-ov-file"
+			}
+		]
+	}
+}

@@ -1,0 +1,196 @@
+{
+  "name": "Clean a Google Sheets email list with ClearBounce",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Clean a Google Sheets email list with ClearBounce\n\nReads every row of a sheet, verifies all addresses in **one ClearBounce bulk job** (duplicates are charged once) and writes `status`, `reason` and `score` back to each row.\n\n**Setup**\n1. Your sheet needs an `email` column plus empty `status`, `reason` and `score` columns.\n2. Pick the spreadsheet and sheet in both Google Sheets nodes.\n3. Create a ClearBounce API credential with a live key (`cb_live_`). Bulk jobs cost 1 credit per unique address.\n4. Click **Execute workflow**.\n\nInvalid or empty addresses are skipped for free and marked `invalid_syntax`.",
+        "height": 380,
+        "width": 440
+      },
+      "id": "b2e4d3e1-0002-4d2f-8b20-000000000001",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b2e4d3e1-0002-4d2f-8b20-000000000002",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "b2e4d3e1-0002-4d2f-8b20-000000000003",
+      "name": "Read Contacts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "bulkJob",
+        "email": "={{ $json.email }}"
+      },
+      "id": "b2e4d3e1-0002-4d2f-8b20-000000000004",
+      "name": "Verify All Emails",
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
+      "position": [
+        760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Read Contacts').item.json.row_number }}",
+            "status": "={{ $json.status }}",
+            "reason": "={{ $json.reason }}",
+            "score": "={{ $json.score }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2e4d3e1-0002-4d2f-8b20-000000000005",
+      "name": "Write Results",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        980,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Read Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Contacts": {
+      "main": [
+        [
+          {
+            "node": "Verify All Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify All Emails": {
+      "main": [
+        [
+          {
+            "node": "Write Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

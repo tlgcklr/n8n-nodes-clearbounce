@@ -1,0 +1,114 @@
+{
+  "name": "Verify form signups with ClearBounce",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Verify form signups with ClearBounce\n\nEvery form submission is checked with ClearBounce before it reaches your list. Only `deliverable` addresses continue; everything else is routed to a separate branch.\n\n**Setup**\n1. Create a ClearBounce API credential (Dashboard → API). A `cb_test_` key lets you try it without spending credits.\n2. Replace the two end nodes with your own destination, e.g. Mailchimp, HubSpot or Google Sheets.\n3. Activate the workflow and share the form URL.",
+        "height": 340,
+        "width": 420
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000001",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-120, -200]
+    },
+    {
+      "parameters": {
+        "formTitle": "Join our newsletter",
+        "formFields": {
+          "values": [
+            { "fieldLabel": "Name", "requiredField": true },
+            { "fieldLabel": "Email", "fieldType": "email", "requiredField": true }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000002",
+      "name": "Signup Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [340, 0],
+      "webhookId": "a1f3c2d0-0001-4c1e-9a10-0000000000ff"
+    },
+    {
+      "parameters": {
+        "email": "={{ $json.Email }}"
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000003",
+      "name": "Verify Email",
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
+      "position": [560, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "a1f3c2d0-0001-4c1e-9a10-0000000000c1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "deliverable",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000004",
+      "name": "Is Deliverable?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000d1", "name": "name", "value": "={{ $('Signup Form').item.json.Name }}", "type": "string" },
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000d2", "name": "email", "value": "={{ $json.email }}", "type": "string" },
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000d3", "name": "score", "value": "={{ $json.score }}", "type": "number" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000005",
+      "name": "Add to List",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1000, -100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000e1", "name": "email", "value": "={{ $json.email }}", "type": "string" },
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000e2", "name": "status", "value": "={{ $json.status }}", "type": "string" },
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000e3", "name": "reason", "value": "={{ $json.reason }}", "type": "string" },
+            { "id": "a1f3c2d0-0001-4c1e-9a10-0000000000e4", "name": "didYouMean", "value": "={{ $json.didYouMean }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1f3c2d0-0001-4c1e-9a10-000000000006",
+      "name": "Log Rejected Signup",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1000, 100]
+    }
+  ],
+  "connections": {
+    "Signup Form": { "main": [[{ "node": "Verify Email", "type": "main", "index": 0 }]] },
+    "Verify Email": { "main": [[{ "node": "Is Deliverable?", "type": "main", "index": 0 }]] },
+    "Is Deliverable?": {
+      "main": [
+        [{ "node": "Add to List", "type": "main", "index": 0 }],
+        [{ "node": "Log Rejected Signup", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

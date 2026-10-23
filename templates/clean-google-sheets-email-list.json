@@ -1,0 +1,493 @@
+{
+  "name": "Clean a Google Sheets email list with ClearBounce bulk verification",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Clean a Google Sheets email list with ClearBounce\n\nVerify every address in a Google Sheet in one bulk job and write the result next to each row, so you only send to addresses that can receive mail.\n\n### Who is it for\nMarketers, sales teams and agencies who keep contact lists in Google Sheets and want to cut bounces before a campaign.\n\n### How it works\n1. Reads all rows of your sheet.\n2. Cleans the list (trims, lowercases, removes duplicates and malformed addresses).\n3. Starts a ClearBounce bulk job and checks every 30 seconds until it finishes.\n4. Writes `status`, `reason` and `score` back to each row.\n\n### Setup\n1. Add `email`, `status`, `reason` and `score` columns to your sheet.\n2. Select the spreadsheet and sheet in **Read Contacts** and **Write Results**.\n3. Create a free ClearBounce account and an API key (Dashboard \u2192 API).\n4. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to the three ClearBounce HTTP nodes.\n5. Click **Execute workflow**.\n\n### Requirements\n- Google Sheets account\n- ClearBounce account (1 credit per unique address; up to 10,000 addresses per run)\n\n### Customize\nFilter on `status` = `deliverable` before syncing the list to Mailchimp, HubSpot or your sending tool.",
+        "height": 760,
+        "width": 520
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000001",
+      "name": "Template Description",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Read and clean the list",
+        "height": 300,
+        "width": 520,
+        "color": 7
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000002",
+      "name": "Step 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Verify with ClearBounce\nStarts one bulk job and checks every 30 seconds until it is done.",
+        "height": 460,
+        "width": 880,
+        "color": 7
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000003",
+      "name": "Step 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Write results to the sheet",
+        "height": 300,
+        "width": 520,
+        "color": 7
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000004",
+      "name": "Step 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000010",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        40,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000011",
+      "name": "Read Contacts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Trim, lowercase and de-duplicate addresses. Malformed addresses are left out:\n// ClearBounce rejects the whole upload if one of them is invalid.\nconst valid = /^(?!\\.)(?!.*\\.\\.)([A-Z0-9_'+\\-.]*)[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\\.)+[A-Z]{2,}$/i;\nconst emails = [...new Set(\n  $input.all()\n    .map((item) => String(item.json.email ?? '').trim().toLowerCase())\n    .filter((email) => valid.test(email)),\n)];\n\nif (emails.length === 0) {\n  throw new Error(\"No valid addresses found. Check that your sheet has an 'email' column.\");\n}\nif (emails.length > 10000) {\n  throw new Error(`Found ${emails.length} addresses; one run handles up to 10,000. Split the sheet and run again.`);\n}\nreturn [{ json: { emails } }];"
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000012",
+      "name": "Prepare Email List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.clearbounce.net/api/v1/bulk/upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ emails: $json.emails }) }}",
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000013",
+      "name": "Start Bulk Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000014",
+      "name": "Wait 30 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        760,
+        80
+      ],
+      "webhookId": "d4a6f5a3-0004-4f4b-8d40-0000000000ff"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clearbounce.net/api/v1/bulk/status/{{ $('Start Bulk Job').first().json.jobId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000015",
+      "name": "Check Job Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        940,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d4a6f5a3-0004-4f4b-8d40-0000000000c1",
+              "leftValue": "={{ $json.job.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000016",
+      "name": "Job Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d4a6f5a3-0004-4f4b-8d40-0000000000c2",
+              "leftValue": "={{ $json.job.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000017",
+      "name": "Job Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=ClearBounce could not finish bulk job {{ $('Start Bulk Job').first().json.jobId }}. Run the workflow again or contact support@clearbounce.net."
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000018",
+      "name": "Stop: Job Failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.clearbounce.net/api/v1/bulk/results/{{ $('Start Bulk Job').first().json.jobId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000019",
+      "name": "Get Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Put each result back on the row it came from.\nconst results = new Map(\n  $input.first().json.results.map((r) => [String(r.email).toLowerCase(), r]),\n);\n\nreturn $('Read Contacts').all().map((row) => {\n  const email = String(row.json.email ?? '').trim().toLowerCase();\n  const r = results.get(email);\n  return {\n    json: {\n      row_number: row.json.row_number,\n      status: r ? r.status : 'undeliverable',\n      reason: r ? r.reason : 'invalid_syntax',\n      score: r ? r.score : 0,\n    },\n  };\n});"
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000020",
+      "name": "Match Results to Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "status": "={{ $json.status }}",
+            "reason": "={{ $json.reason }}",
+            "score": "={{ $json.score }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reason",
+              "displayName": "reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4a6f5a3-0004-4f4b-8d40-000000000021",
+      "name": "Write Results",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1700,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Read Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Contacts": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email List": {
+      "main": [
+        [
+          {
+            "node": "Start Bulk Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Bulk Job": {
+      "main": [
+        [
+          {
+            "node": "Wait 30 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Check Job Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Job Status": {
+      "main": [
+        [
+          {
+            "node": "Job Finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Finished?": {
+      "main": [
+        [
+          {
+            "node": "Get Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Job Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Failed?": {
+      "main": [
+        [
+          {
+            "node": "Stop: Job Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Results": {
+      "main": [
+        [
+          {
+            "node": "Match Results to Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Results to Rows": {
+      "main": [
+        [
+          {
+            "node": "Write Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
