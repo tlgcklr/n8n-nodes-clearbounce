@@ -48,7 +48,7 @@ With a test key, the local part of the address picks the mock result, for exampl
 
 ## Compatibility
 
-Built with `@n8n/node-cli` and tested with n8n 2.44. Requires no runtime dependencies.
+Built with `@n8n/node-cli` and tested with n8n 2.44.6. Has no runtime dependencies.
 
 ## Usage
 
@@ -69,9 +69,9 @@ Built with `@n8n/node-cli` and tested with n8n 2.44. Requires no runtime depende
 
 Turn it off to get the full result, including SMTP and DNS details and the remaining credit balance.
 
-### Bulk jobs and invalid addresses
+### Malformed addresses
 
-Input items whose address is empty or malformed are not sent to ClearBounce and cost nothing. They come back with `status: undeliverable` and `reason: invalid_syntax`, so every input item still gets exactly one output item.
+Malformed addresses are not sent to ClearBounce and cost nothing. **Verify** and **Create** return them with `status: undeliverable` and `reason: invalid_syntax`, so every input item still gets exactly one output item. In a bulk job, empty addresses are treated the same way; in **Verify**, an empty 'Email' stops the node, because it usually means the parameter points to the wrong field.
 
 Large jobs can take a while. The default **Max Wait Time** is 60 minutes. If a job takes longer, the node stops waiting but the job keeps running, and you can fetch the results later with **Get Results**.
 

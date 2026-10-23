@@ -18,6 +18,7 @@ import { bulkJobFields, bulkJobOperations } from './descriptions/BulkJobDescript
 import { emailFields, emailOperations } from './descriptions/EmailDescription';
 import {
 	clearBounceApiRequest,
+	invalidSyntaxResult,
 	isUploadableEmail,
 	MAX_EMAILS_PER_JOB,
 	normalizeEmail,
@@ -26,18 +27,6 @@ import {
 
 // A single verification can wait on slow or greylisting mail servers.
 const VERIFY_TIMEOUT_MS = 120_000;
-
-/** Result used for input items whose address can't be sent to the bulk endpoint. */
-function invalidSyntaxResult(email: string): IDataObject {
-	return {
-		email,
-		status: 'undeliverable',
-		subStatus: 'invalid_syntax',
-		reason: 'invalid_syntax',
-		score: 0,
-		isDeliverable: false,
-	};
-}
 
 async function waitForBulkJob(
 	this: IExecuteFunctions,
@@ -101,6 +90,13 @@ async function createBulkJobs(
 	const allItems: IPairedItemData[] = items.map((_, i) => ({ item: i }));
 	const skippedCount = itemEmails.filter((email) => !uploadable.has(email)).length;
 
+	// Nothing valid usually means the 'Email' parameter points to the wrong field.
+	if (uniqueEmails.length === 0) {
+		throw new NodeOperationError(this.getNode(), 'None of the input items has a valid email address', {
+			description: "Check that the 'Email' parameter points to the field that holds the address.",
+		});
+	}
+
 	if (!waitForCompletion) {
 		const returnData: INodeExecutionData[] = [];
 		for (const chunk of chunks) {
@@ -116,11 +112,6 @@ async function createBulkJobs(
 					skippedInvalidEmails: skippedCount,
 				},
 				pairedItem: allItems,
-			});
-		}
-		if (returnData.length === 0) {
-			throw new NodeOperationError(this.getNode(), 'None of the input items has a valid email address', {
-				description: "Check that the 'Email' parameter points to the field that holds the address.",
 			});
 		}
 		return returnData;
@@ -237,6 +228,17 @@ export class ClearBounce implements INodeType {
 							description: 'Map the field of the input item that holds the email address.',
 						});
 					}
+					const simplify = this.getNodeParameter('simplify', i) as boolean;
+					// ClearBounce answers malformed addresses with a 400; return the same
+					// result a bulk job gives them instead, without spending a credit.
+					if (!isUploadableEmail(email)) {
+						const result = invalidSyntaxResult(email);
+						returnData.push({
+							json: simplify ? simplifyResult(result) : result,
+							pairedItem: { item: i },
+						});
+						continue;
+					}
 					const response = await clearBounceApiRequest.call(
 						this,
 						'POST',
@@ -245,7 +247,6 @@ export class ClearBounce implements INodeType {
 						i,
 						VERIFY_TIMEOUT_MS,
 					);
-					const simplify = this.getNodeParameter('simplify', i) as boolean;
 					const data = response.data as IDataObject;
 					const json: IDataObject = simplify
 						? simplifyResult(data)

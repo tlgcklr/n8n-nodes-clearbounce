@@ -25,6 +25,18 @@ export function normalizeEmail(email: unknown): string {
 	return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
+/** Result for addresses ClearBounce would reject as malformed; no credit is spent. */
+export function invalidSyntaxResult(email: string): IDataObject {
+	return {
+		email,
+		status: 'undeliverable',
+		subStatus: 'invalid_syntax',
+		reason: 'invalid_syntax',
+		score: 0,
+		isDeliverable: false,
+	};
+}
+
 const ERROR_HINTS: Record<number, { message: string; description: string }> = {
 	401: {
 		message: 'ClearBounce rejected the API key',
@@ -61,14 +73,22 @@ export async function clearBounceApiRequest(
 			options,
 		)) as IDataObject;
 	} catch (error) {
+		const apiError = error as JsonObject;
 		const status = Number(
-			(error as JsonObject).httpCode ??
-				((error as JsonObject).response as JsonObject | undefined)?.status,
+			apiError.httpCode ?? (apiError.response as JsonObject | undefined)?.status,
 		);
-		throw new NodeApiError(this.getNode(), error as JsonObject, {
-			itemIndex,
-			...(ERROR_HINTS[status] ?? {}),
-		});
+		// n8n puts the message from the response body in `description`; it is more
+		// useful than the generic text n8n derives from the status code.
+		const serverMessage =
+			typeof apiError.description === 'string' ? apiError.description : undefined;
+		const override = ERROR_HINTS[status] ??
+			(serverMessage
+				? {
+						message: serverMessage,
+						description: 'See https://docs.clearbounce.net/api-reference/errors for details.',
+					}
+				: {});
+		throw new NodeApiError(this.getNode(), apiError, { itemIndex, ...override });
 	}
 }
 
