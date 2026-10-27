@@ -14,12 +14,12 @@ Anyone collecting leads, waitlist or newsletter signups with n8n Forms who wants
 
 ### Setup
 1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).
-2. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to **Verify Email**.
+2. Add a **ClearBounce** credential with your API key and select it in **Verify Email**. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.
 3. Add `Name`, `Email`, `Status` and `Score` columns to a sheet and select it in **Save Signup**.
 4. Activate the workflow and share the form URL.
 
 ### Requirements
-- ClearBounce account (1 credit per verification)
+- ClearBounce account (1 credit per verification) and the verified ClearBounce node
 - Google Sheets account
 
 ### Customize

@@ -88,8 +88,22 @@ export async function clearBounceApiRequest(
 						description: 'See https://docs.clearbounce.net/api-reference/errors for details.',
 					}
 				: {});
+		// Newer n8n versions already throw a NodeApiError here, and wrapping it again
+		// hands back the original unchanged, so the hint has to be set on it directly.
+		if (error instanceof NodeApiError) {
+			if (override.message) error.message = override.message;
+			if (override.description) error.description = override.description;
+			error.context.itemIndex = itemIndex;
+		}
 		throw new NodeApiError(this.getNode(), apiError, { itemIndex, ...override });
 	}
+}
+
+/** Turns a domain-only typo suggestion ("gmail.com") into a full address. */
+function suggestedAddress(email: unknown, suggested: unknown): string | null {
+	if (typeof suggested !== 'string' || !suggested) return null;
+	if (suggested.includes('@') || typeof email !== 'string' || !email.includes('@')) return suggested;
+	return `${email.slice(0, email.lastIndexOf('@'))}@${suggested}`;
 }
 
 /**
@@ -109,6 +123,6 @@ export function simplifyResult(result: IDataObject): IDataObject {
 		isDisposable: checks.isDisposable ?? null,
 		isRoleBased: checks.isRoleBased ?? null,
 		isFreeProvider: checks.isFreeProvider ?? null,
-		didYouMean: typo?.suggested ?? null,
+		didYouMean: suggestedAddress(result.email, typo?.suggested),
 	};
 }

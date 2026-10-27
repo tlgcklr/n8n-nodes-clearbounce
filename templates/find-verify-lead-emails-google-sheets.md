@@ -15,11 +15,11 @@ Sales teams, recruiters and agencies building outreach lists who start from a na
 1. Your sheet needs `name`, `domain`, `email`, `status` and `confidence` columns.
 2. Select the spreadsheet and sheet in **Read Leads** and **Update Lead**.
 3. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).
-4. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to **Find Email** and **Verify Email**.
+4. Add a **ClearBounce** credential with your API key and select it in **Find Email** and **Verify Email**. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.
 5. Click **Execute workflow**.
 
 ### Requirements
-- ClearBounce account (finding is free; 1 credit per verification)
+- ClearBounce account (finding is free; 1 credit per verification) and the verified ClearBounce node
 - Google Sheets account
 
 ### Customize

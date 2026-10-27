@@ -23,12 +23,12 @@ Marketing and sales teams that capture leads with a form and sync them to HubSpo
 
 ### Setup
 1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).
-2. Create a **Header Auth** credential: name `X-API-Key`, value your key, and select it in the five ClearBounce HTTP nodes.
+2. Add a **ClearBounce** credential with your API key and select it in the five ClearBounce nodes. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.
 3. Connect HubSpot, Google Sheets and Slack. Create **Accepted** and **Rejected** tabs with the column names used in the two logging nodes, and pick your Slack channels.
 4. Adjust **Settings**, then activate the workflow and share the form URL.
 
 ### Requirements
-- ClearBounce account (verification: 1 credit per check; finding: free)
+- ClearBounce account (verification: 1 credit per check; finding: free) and the verified ClearBounce node
 - HubSpot, Google Sheets and Slack accounts
 
 ### Customize

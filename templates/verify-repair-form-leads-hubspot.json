@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Verify and repair inbound form leads with ClearBounce before syncing them to HubSpot\n\nStop fake, mistyped and dead email addresses from ever reaching your CRM, without losing the real leads behind them. Every form submission is verified in real time with ClearBounce. Instead of simply discarding bad addresses, the workflow tries to **repair** them first: it fixes typos like `gmial.com`, and for B2B leads it searches the company domain for the person's real work address.\n\n### Who it's for\nMarketing and sales teams that capture leads with a form and sync them to HubSpot, and agencies that need clean lead data for their clients.\n\n### Key benefits\n- **Only deliverable leads reach HubSpot**, each tagged with how it was verified.\n- **Recovers leads others would throw away**: typo correction and company-domain search.\n- **Handles greylisting**: addresses the mail server would not confirm are re-checked after a pause instead of being rejected.\n- **Full audit trail**: accepted and rejected leads are logged to Google Sheets with a reason.\n- **Ops alerts**: Slack messages when ClearBounce can't be reached or credits run low.\n\n### How it works\n1. **Lead Form** collects name, work email and company website; **Normalize Lead** cleans them up.\n2. **Verify Email** checks the address with ClearBounce and **Route by Status** sends it down one of five paths.\n3. **Deliverable** and (optionally) **catch-all** leads are accepted.\n4. **Undeliverable** leads go to repair: a suggested typo fix is verified first, then the person's address is looked up on the company domain and verified.\n5. **Unknown** results wait (15 min by default) and are verified once more.\n6. Disposable, role-based and unrepairable addresses are rejected with a reason.\n7. Accepted leads are upserted in HubSpot, logged and announced in Slack.\n\n### Setup\n1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard \u2192 API).\n2. Create a **Header Auth** credential: name `X-API-Key`, value your key, and select it in the five ClearBounce HTTP nodes.\n3. Connect HubSpot, Google Sheets and Slack. Create **Accepted** and **Rejected** tabs with the column names used in the two logging nodes, and pick your Slack channels.\n4. Adjust **Settings**, then activate the workflow and share the form URL.\n\n### Requirements\n- ClearBounce account (verification: 1 credit per check; finding: free)\n- HubSpot, Google Sheets and Slack accounts\n\n### Customize\nReplace **Lead Form** with Typeform, Webflow or a webhook, swap HubSpot for Pipedrive or Salesforce, or set `acceptCatchAll` to `false` in **Settings** to send catch-all leads to review.",
+        "content": "## Verify and repair inbound form leads with ClearBounce before syncing them to HubSpot\n\nStop fake, mistyped and dead email addresses from ever reaching your CRM, without losing the real leads behind them. Every form submission is verified in real time with ClearBounce. Instead of simply discarding bad addresses, the workflow tries to **repair** them first: it fixes typos like `gmial.com`, and for B2B leads it searches the company domain for the person's real work address.\n\n### Who it's for\nMarketing and sales teams that capture leads with a form and sync them to HubSpot, and agencies that need clean lead data for their clients.\n\n### Key benefits\n- **Only deliverable leads reach HubSpot**, each tagged with how it was verified.\n- **Recovers leads others would throw away**: typo correction and company-domain search.\n- **Handles greylisting**: addresses the mail server would not confirm are re-checked after a pause instead of being rejected.\n- **Full audit trail**: accepted and rejected leads are logged to Google Sheets with a reason.\n- **Ops alerts**: Slack messages when ClearBounce can't be reached or credits run low.\n\n### How it works\n1. **Lead Form** collects name, work email and company website; **Normalize Lead** cleans them up.\n2. **Verify Email** checks the address with ClearBounce and **Route by Status** sends it down one of five paths.\n3. **Deliverable** and (optionally) **catch-all** leads are accepted.\n4. **Undeliverable** leads go to repair: a suggested typo fix is verified first, then the person's address is looked up on the company domain and verified.\n5. **Unknown** results wait (15 min by default) and are verified once more.\n6. Disposable, role-based and unrepairable addresses are rejected with a reason.\n7. Accepted leads are upserted in HubSpot, logged and announced in Slack.\n\n### Setup\n1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).\n2. Add a **ClearBounce** credential with your API key and select it in the five ClearBounce nodes. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.\n3. Connect HubSpot, Google Sheets and Slack. Create **Accepted** and **Rejected** tabs with the column names used in the two logging nodes, and pick your Slack channels.\n4. Adjust **Settings**, then activate the workflow and share the form URL.\n\n### Requirements\n- ClearBounce account (verification: 1 credit per check; finding: free) and the verified ClearBounce node\n- HubSpot, Google Sheets and Slack accounts\n\n### Customize\nReplace **Lead Form** with Typeform, Webflow or a webhook, swap HubSpot for Pipedrive or Salesforce, or set `acceptCatchAll` to `false` in **Settings** to send catch-all leads to review.",
         "height": 1360,
         "width": 620
       },
@@ -237,19 +237,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: $json.email }) }}",
-        "options": {}
+        "email": "={{ $json.email }}",
+        "simplify": false
       },
       "id": "a7d9c8d6-0007-4c7e-9a70-000000000013",
       "name": "Verify Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         760,
         0
@@ -272,7 +266,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.data.status === 'deliverable' }}",
+                    "leftValue": "={{ $json.status === 'deliverable' }}",
                     "rightValue": "",
                     "operator": {
                       "type": "boolean",
@@ -296,7 +290,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.data.status === 'risky' && $json.data.checks.isCatchAll === true && $('Settings').first().json.acceptCatchAll }}",
+                    "leftValue": "={{ $json.status === 'risky' && $json.checks?.isCatchAll === true && $('Settings').first().json.acceptCatchAll }}",
                     "rightValue": "",
                     "operator": {
                       "type": "boolean",
@@ -320,7 +314,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.data.status === 'undeliverable' }}",
+                    "leftValue": "={{ $json.status === 'undeliverable' }}",
                     "rightValue": "",
                     "operator": {
                       "type": "boolean",
@@ -344,7 +338,7 @@
                 },
                 "conditions": [
                   {
-                    "leftValue": "={{ $json.data.status === 'unknown' }}",
+                    "leftValue": "={{ $json.status === 'unknown' }}",
                     "rightValue": "",
                     "operator": {
                       "type": "boolean",
@@ -385,7 +379,7 @@
           "conditions": [
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000c15",
-              "leftValue": "={{ !!$json.data.checks.hasTypo }}",
+              "leftValue": "={{ !!$json.checks?.hasTypo }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -410,19 +404,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: ((s) => s.includes('@') ? s : $('Normalize Lead').item.json.email.split('@')[0] + '@' + s)($json.data.checks.hasTypo.suggested) }) }}",
-        "options": {}
+        "email": "={{ ((s) => s.includes('@') ? s : $('Normalize Lead').item.json.email.split('@')[0] + '@' + s)($json.checks?.hasTypo.suggested) }}",
+        "simplify": false
       },
       "id": "a7d9c8d6-0007-4c7e-9a70-000000000016",
       "name": "Verify Corrected Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         1540,
         220
@@ -441,7 +429,7 @@
           "conditions": [
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000c17",
-              "leftValue": "={{ $json.data?.status === 'deliverable' }}",
+              "leftValue": "={{ $json.status === 'deliverable' }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -501,19 +489,14 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/finder/person",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ name: $('Normalize Lead').item.json.name, domain: $('Normalize Lead').item.json.domain }) }}",
-        "options": {}
+        "operation": "find",
+        "fullName": "={{ $('Normalize Lead').item.json.name }}",
+        "domain": "={{ $('Normalize Lead').item.json.domain }}"
       },
       "id": "a7d9c8d6-0007-4c7e-9a70-000000000019",
       "name": "Find Business Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         1780,
         440
@@ -522,19 +505,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: $json.email || ($json.candidates || [])[0] || '' }) }}",
-        "options": {}
+        "email": "={{ $json.email || ($json.candidates || [])[0] || '' }}",
+        "simplify": false
       },
       "id": "a7d9c8d6-0007-4c7e-9a70-000000000020",
       "name": "Verify Found Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         2020,
         440
@@ -553,7 +530,7 @@
           "conditions": [
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000c21",
-              "leftValue": "={{ $json.data?.status === 'deliverable' }}",
+              "leftValue": "={{ $json.status === 'deliverable' }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -593,19 +570,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: $('Normalize Lead').item.json.email }) }}",
-        "options": {}
+        "email": "={{ $('Normalize Lead').item.json.email }}",
+        "simplify": false
       },
       "id": "a7d9c8d6-0007-4c7e-9a70-000000000023",
       "name": "Re-verify Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         1540,
         760
@@ -624,7 +595,7 @@
           "conditions": [
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000c24",
-              "leftValue": "={{ $json.data?.status === 'deliverable' || ($json.data?.checks?.isCatchAll === true && $('Settings').first().json.acceptCatchAll) }}",
+              "leftValue": "={{ $json.status === 'deliverable' || ($json.checks?.isCatchAll === true && $('Settings').first().json.acceptCatchAll) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -672,7 +643,7 @@
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s253",
               "name": "email",
-              "value": "={{ $json.data.email }}",
+              "value": "={{ $json.email }}",
               "type": "string"
             },
             {
@@ -690,19 +661,19 @@
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s256",
               "name": "status",
-              "value": "={{ $json.data.status }}",
+              "value": "={{ $json.status }}",
               "type": "string"
             },
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s257",
               "name": "score",
-              "value": "={{ $json.data.score }}",
+              "value": "={{ $json.score }}",
               "type": "number"
             },
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s258",
               "name": "verification",
-              "value": "={{ ({ 'Route by Status': $json.data.checks.isCatchAll ? 'Catch-all domain, accepted' : 'Verified', 'Corrected Is Deliverable?': 'Typo corrected', 'Found Is Deliverable?': 'Found on company domain', 'Deliverable on Retry?': 'Verified on retry' })[$prevNode.name] || 'Verified' }}",
+              "value": "={{ ({ 'Route by Status': $json.checks?.isCatchAll ? 'Catch-all domain, accepted' : 'Verified', 'Corrected Is Deliverable?': 'Typo corrected', 'Found Is Deliverable?': 'Found on company domain', 'Deliverable on Retry?': 'Verified on retry' })[$prevNode.name] || 'Verified' }}",
               "type": "string"
             },
             {
@@ -965,13 +936,13 @@
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s313",
               "name": "status",
-              "value": "={{ $json.data?.status ?? 'not verified' }}",
+              "value": "={{ $json.status ?? 'not verified' }}",
               "type": "string"
             },
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s314",
               "name": "reason",
-              "value": "={{ ({ 'Verify Email': 'ClearBounce could not be reached, retry later', 'Route by Status': $json.data?.checks?.isDisposable ? 'Disposable address' : $json.data?.checks?.isRoleBased ? 'Role-based address' : $json.data?.checks?.isCatchAll ? 'Catch-all domain' : 'Low-quality address', 'Search Company Domain?': 'Undeliverable, no company domain to search', 'Found Is Deliverable?': 'Undeliverable, no deliverable address on the company domain', 'Deliverable on Retry?': 'Mail server did not confirm the address' })[$prevNode.name] || 'Rejected' }}",
+              "value": "={{ ({ 'Verify Email': 'Not verified, ClearBounce API error (see ops alert)', 'Route by Status': $json.checks?.isDisposable ? 'Disposable address' : $json.checks?.isRoleBased ? 'Role-based address' : $json.checks?.isCatchAll ? 'Catch-all domain' : 'Low-quality address', 'Search Company Domain?': 'Undeliverable, no company domain to search', 'Found Is Deliverable?': 'Undeliverable, no deliverable address on the company domain', 'Deliverable on Retry?': 'Mail server did not confirm the address' })[$prevNode.name] || 'Rejected' }}",
               "type": "string"
             }
           ]
@@ -1081,7 +1052,7 @@
             {
               "id": "a7d9c8d6-0007-4c7e-9a70-0000000000s330",
               "name": "alert",
-              "value": "=:rotating_light: ClearBounce could not verify {{ $('Normalize Lead').item.json.email }}: {{ (() => { const raw = $json.error?.message || $json.message || ''; const code = (raw.match(/^(\\d{3})/) || [])[1]; let msg = raw; try { msg = JSON.parse(JSON.parse(raw.replace(/^\\d{3} - /, ''))).message || raw; } catch (e) {} return (code ? code + ' ' : '') + (msg || 'unknown error') + (code === '402' ? ' (top up at https://clearbounce.net/pricing)' : ''); })() }}. The lead was logged to the Rejected sheet.",
+              "value": "=:rotating_light: ClearBounce could not verify {{ $('Normalize Lead').item.json.email }}: {{ $json.error?.message ?? $json.error ?? 'unknown error' }}{{ /credits/i.test($json.error?.message ?? $json.error ?? '') ? ' (top up at https://clearbounce.net/pricing)' : '' }}. The lead was logged to the Rejected sheet.",
               "type": "string"
             }
           ]

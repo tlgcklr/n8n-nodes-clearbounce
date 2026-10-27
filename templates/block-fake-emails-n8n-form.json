@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Block fake and mistyped emails on n8n Form signups with ClearBounce\n\nVerify every signup the moment it is submitted. Real addresses are saved to Google Sheets; fake, disposable or mistyped ones get a friendly message (with a \"did you mean\" suggestion) so the person can fix them right away.\n\n### Who is it for\nAnyone collecting leads, waitlist or newsletter signups with n8n Forms who wants a clean list from day one.\n\n### How it works\n1. **Signup Form** collects name and email.\n2. **Verify Email** checks the address with ClearBounce in real time.\n3. Addresses that are undeliverable or disposable are rejected; everything else is accepted.\n4. Accepted signups are appended to Google Sheets and see a thank-you page.\n5. Rejected signups see what went wrong and the suggested correction, if there is one.\n\n### Setup\n1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard \u2192 API).\n2. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to **Verify Email**.\n3. Add `Name`, `Email`, `Status` and `Score` columns to a sheet and select it in **Save Signup**.\n4. Activate the workflow and share the form URL.\n\n### Requirements\n- ClearBounce account (1 credit per verification)\n- Google Sheets account\n\n### Customize\nSwap **Save Signup** for Mailchimp, HubSpot or your CRM, or tighten the rule in **Accept Signup?** to also reject catch-all or role-based addresses.",
+        "content": "## Block fake and mistyped emails on n8n Form signups with ClearBounce\n\nVerify every signup the moment it is submitted. Real addresses are saved to Google Sheets; fake, disposable or mistyped ones get a friendly message (with a \"did you mean\" suggestion) so the person can fix them right away.\n\n### Who is it for\nAnyone collecting leads, waitlist or newsletter signups with n8n Forms who wants a clean list from day one.\n\n### How it works\n1. **Signup Form** collects name and email.\n2. **Verify Email** checks the address with ClearBounce in real time.\n3. Addresses that are undeliverable or disposable are rejected; everything else is accepted.\n4. Accepted signups are appended to Google Sheets and see a thank-you page.\n5. Rejected signups see what went wrong and the suggested correction, if there is one.\n\n### Setup\n1. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).\n2. Add a **ClearBounce** credential with your API key and select it in **Verify Email**. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.\n3. Add `Name`, `Email`, `Status` and `Score` columns to a sheet and select it in **Save Signup**.\n4. Activate the workflow and share the form URL.\n\n### Requirements\n- ClearBounce account (1 credit per verification) and the verified ClearBounce node\n- Google Sheets account\n\n### Customize\nSwap **Save Signup** for Mailchimp, HubSpot or your CRM, or tighten the rule in **Accept Signup?** to also reject catch-all or role-based addresses.",
         "height": 700,
         "width": 560
       },
@@ -79,19 +79,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: $json.Email }) }}",
-        "options": {}
+        "email": "={{ $json.Email }}",
+        "simplify": false
       },
       "id": "e5b7a6b4-0005-4a5c-9e50-000000000011",
       "name": "Verify Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         260,
         80
@@ -110,7 +104,7 @@
           "conditions": [
             {
               "id": "e5b7a6b4-0005-4a5c-9e50-0000000000c1",
-              "leftValue": "={{ $json.data?.status !== 'undeliverable' && $json.data?.checks?.isDisposable !== true }}",
+              "leftValue": "={{ $json.status !== 'undeliverable' && $json.checks?.isDisposable !== true }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -151,8 +145,8 @@
           "value": {
             "Name": "={{ $('Signup Form').item.json.Name }}",
             "Email": "={{ $('Signup Form').item.json.Email }}",
-            "Status": "={{ $json.data?.status ?? 'not_verified' }}",
-            "Score": "={{ $json.data?.score ?? '' }}"
+            "Status": "={{ $json.status ?? 'not_verified' }}",
+            "Score": "={{ $json.score ?? '' }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -230,7 +224,7 @@
       "parameters": {
         "operation": "completion",
         "completionTitle": "Please check your email address",
-        "completionMessage": "={{ (() => { const typo = $json.data?.checks?.hasTypo; if (!typo) return ''; const s = typo.suggested; const fixed = s.includes('@') ? s : $('Signup Form').item.json.Email.split('@')[0] + '@' + s; return 'Did you mean ' + fixed + '? '; })() }}We could not deliver to {{ $('Signup Form').item.json.Email }}. Please go back and sign up with an address you use.",
+        "completionMessage": "={{ (() => { const typo = $json.checks?.hasTypo; if (!typo) return ''; const s = typo.suggested; const fixed = s.includes('@') ? s : $('Signup Form').item.json.Email.split('@')[0] + '@' + s; return 'Did you mean ' + fixed + '? '; })() }}We could not deliver to {{ $('Signup Form').item.json.Email }}. Please go back and sign up with an address you use.",
         "options": {}
       },
       "id": "e5b7a6b4-0005-4a5c-9e50-000000000015",

@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Find and verify business emails for leads in Google Sheets with ClearBounce\n\nTurn a sheet of names and company domains into verified business email addresses. For each lead without an email, ClearBounce finds the most likely address, verifies it and writes the address and its status back to the row.\n\n### Who is it for\nSales teams, recruiters and agencies building outreach lists who start from a name and a company website.\n\n### How it works\n1. Reads every lead from Google Sheets and keeps the rows without an email.\n2. **Find Email** looks up the most likely address from the name and domain (free).\n3. **Verify Email** checks that address in real time (1 credit).\n4. Writes `email`, `status` and `confidence` back to the lead's row, so you can filter on `deliverable` before sending.\n\n### Setup\n1. Your sheet needs `name`, `domain`, `email`, `status` and `confidence` columns.\n2. Select the spreadsheet and sheet in **Read Leads** and **Update Lead**.\n3. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard \u2192 API).\n4. Create a **Header Auth** credential: name `X-API-Key`, value your key. Attach it to **Find Email** and **Verify Email**.\n5. Click **Execute workflow**.\n\n### Requirements\n- ClearBounce account (finding is free; 1 credit per verification)\n- Google Sheets account\n\n### Customize\nRun it on a schedule to enrich new leads automatically, or try the other candidates in **Find Email**'s `candidates` list when the first one is undeliverable.",
+        "content": "## Find and verify business emails for leads in Google Sheets with ClearBounce\n\nTurn a sheet of names and company domains into verified business email addresses. For each lead without an email, ClearBounce finds the most likely address, verifies it and writes the address and its status back to the row.\n\n### Who is it for\nSales teams, recruiters and agencies building outreach lists who start from a name and a company website.\n\n### How it works\n1. Reads every lead from Google Sheets and keeps the rows without an email.\n2. **Find Email** looks up the most likely address from the name and domain (free).\n3. **Verify Email** checks that address in real time (1 credit).\n4. Writes `email`, `status` and `confidence` back to the lead's row, so you can filter on `deliverable` before sending.\n\n### Setup\n1. Your sheet needs `name`, `domain`, `email`, `status` and `confidence` columns.\n2. Select the spreadsheet and sheet in **Read Leads** and **Update Lead**.\n3. Create a free [ClearBounce account](https://clearbounce.net/dashboard/register?utm_source=n8n) and an API key (Dashboard → API).\n4. Add a **ClearBounce** credential with your API key and select it in **Find Email** and **Verify Email**. On self-hosted n8n, install the verified `n8n-nodes-clearbounce` community node first.\n5. Click **Execute workflow**.\n\n### Requirements\n- ClearBounce account (finding is free; 1 credit per verification) and the verified ClearBounce node\n- Google Sheets account\n\n### Customize\nRun it on a schedule to enrich new leads automatically, or try the other candidates in **Find Email**'s `candidates` list when the first one is undeliverable.",
         "height": 700,
         "width": 560
       },
@@ -145,19 +145,14 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/finder/person",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ name: $json.name, domain: $json.domain }) }}",
-        "options": {}
+        "operation": "find",
+        "fullName": "={{ $json.name }}",
+        "domain": "={{ $json.domain }}"
       },
       "id": "f6c8b7c5-0006-4b6d-8f60-000000000013",
       "name": "Find Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         620,
         80
@@ -165,19 +160,13 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.clearbounce.net/api/v1/verify",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ email: $json.email || ($json.candidates || [])[0] || '' }) }}",
-        "options": {}
+        "email": "={{ $json.email || ($json.candidates || [])[0] || '' }}",
+        "simplify": false
       },
       "id": "f6c8b7c5-0006-4b6d-8f60-000000000014",
       "name": "Verify Email",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-clearbounce.clearBounce",
+      "typeVersion": 1,
       "position": [
         860,
         80
@@ -201,8 +190,8 @@
           "mappingMode": "defineBelow",
           "value": {
             "row_number": "={{ $('Read Leads').item.json.row_number }}",
-            "email": "={{ $json.data?.email ?? '' }}",
-            "status": "={{ $json.data?.status ?? 'not_found' }}",
+            "email": "={{ $json.email ?? '' }}",
+            "status": "={{ $json.status ?? 'not_found' }}",
             "confidence": "={{ $('Find Email').item.json.confidence }}"
           },
           "matchingColumns": [
